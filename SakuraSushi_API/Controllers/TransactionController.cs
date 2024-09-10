@@ -23,6 +23,25 @@ namespace SakuraSushi_API.Controllers
         [HttpPost("/api/Transaction")]
         public IActionResult Index([FromForm] string tableNumber)
         {
+            var user = User.Claims.FirstOrDefault(s => s.Type == "user_id");
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var userId = Guid.Parse(user.Value);
+            var userData = _context.Users.FirstOrDefault(s => s.Id == userId);
+            if (userData == null)
+            {
+                return NotFound("User not found");
+            }
+
+            if (userData.Role != "Cashier" || userData.Role != "Waiter")
+            {
+                return BadRequest("You need permission");
+            }
+
+
             var exist = _context.Tables.FirstOrDefault(s => s.TableNumber == tableNumber);
 
             if (exist == null)
@@ -37,13 +56,6 @@ namespace SakuraSushi_API.Controllers
                 return BadRequest("Table already has an open transaction");
             }
 
-            var user = User.Claims.FirstOrDefault(s => s.Type == "user_id");
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-
-            var userId = Guid.Parse(user.Value);
             var code = generate_unique_code();
             var newTransaction = new Transaction
             {
@@ -122,6 +134,16 @@ namespace SakuraSushi_API.Controllers
             }
 
             var userId = Guid.Parse(user.Value);
+            var userData = _context.Users.FirstOrDefault(s => s.Id == userId);
+            if (userData == null)
+            {
+                return NotFound("User not found");
+            }
+
+            if (userData.Role != "Cashier")
+            {
+                return BadRequest("You don't have a permission");
+            }
 
             var transaction = _context.Transactions.FirstOrDefault(s => s.UniqueCode == uniqueCode && s.CashierId == userId);
 
@@ -130,10 +152,10 @@ namespace SakuraSushi_API.Controllers
                 return NotFound("Transaction not found");
             }
 
-            //if (transaction.ClosedAt != null)
-            //{
-            //    return BadRequest("Transaction is already paid");
-            //}
+            if (transaction.ClosedAt != null)
+            {
+                return BadRequest("Transaction is already paid");
+            }
 
             transaction.ClosedAt = DateTime.Now;
             _context.SaveChanges();
@@ -180,7 +202,16 @@ namespace SakuraSushi_API.Controllers
             }
 
             var userId = Guid.Parse(user.Value);
+            var userData = _context.Users.FirstOrDefault(s => s.Id == userId);
+            if (userData == null)
+            {
+                return NotFound("User not found");
+            }
 
+            if (userData.Role != "Chef" || userData.Role != "Waiter")
+            {
+                return BadRequest("You don't have a permission");
+            }
             var transaction = _context.Transactions.FirstOrDefault(s => s.UniqueCode == uniqueCode && s.CashierId == userId);
 
             if (transaction == null)
