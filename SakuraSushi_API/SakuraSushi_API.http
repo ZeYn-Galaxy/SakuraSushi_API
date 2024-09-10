@@ -1,0 +1,6 @@
+@SakuraSushi_API_HostAddress = http://localhost:5207
+
+GET {{SakuraSushi_API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
